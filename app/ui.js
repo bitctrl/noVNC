@@ -133,12 +133,9 @@ const UI = {
 
         document.documentElement.classList.remove("noVNC_loading");
 
-        let autoconnect = UI.getSetting('autoconnect');
-        if (autoconnect === 'true' || autoconnect == '1') {
-            autoconnect = true;
+        if (UI.getSetting('autoconnect')) {
             UI.connect();
         } else {
-            autoconnect = false;
             // Show the connect panel on first load unless autoconnecting
             UI.openConnectPanel();
         }
