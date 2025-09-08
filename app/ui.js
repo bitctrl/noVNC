@@ -139,6 +139,15 @@ const UI = {
             // Show the connect panel on first load unless autoconnecting
             UI.openConnectPanel();
         }
+        if (UI.getSetting('hide_status')) {
+            document.documentElement.classList.add('noVNC_hide_status');
+        }
+        if (UI.getSetting('hide_control_bar')) {
+            document.documentElement.classList.add('noVNC_hide_control_bar');
+        }
+        if (UI.getSetting('show_settings_panel')) {
+            UI.openSettingsPanel();
+        }
     },
 
     initFullscreen() {
@@ -166,6 +175,13 @@ const UI = {
         UI.initSetting('logging', 'warn');
         UI.updateLogging();
 
+        UI.initSetting('hide_status', false);
+        UI.initSetting('keep_status', false);
+        UI.initSetting('hide_control_bar', false);
+        UI.initSetting('keep_control_bar', false);
+        UI.initSetting('show_settings_panel', false);
+        UI.initSetting('expand_settings_panel', false);
+
         UI.setupSettingLabels();
 
         /* Populate the controls if defaults are provided in the URL */
@@ -175,6 +191,7 @@ const UI = {
         UI.initSetting('password');
         UI.initSetting('autoconnect', false);
         UI.initSetting('view_clip', false);
+        UI.initSetting('view_drag', false);
         UI.initSetting('resize', 'off');
         UI.initSetting('quality', 6);
         UI.initSetting('compression', 2);
@@ -440,7 +457,9 @@ const UI = {
             UI.disableSetting('repeaterID');
 
             // Hide the controlbar after 2 seconds
-            UI.closeControlbarTimeout = setTimeout(UI.closeControlbar, 2000);
+            if (!(UI.getSetting('keep_control_bar'))) {
+                UI.closeControlbarTimeout = setTimeout(UI.closeControlbar, 2000);
+            }
         } else {
             UI.enableSetting('encrypt');
             UI.enableSetting('shared');
@@ -459,6 +478,10 @@ const UI = {
             .classList.remove('noVNC_open');
         document.getElementById('noVNC_credentials_dlg')
             .classList.remove('noVNC_open');
+
+        if (UI.getSetting('show_settings_panel')) {
+            UI.openSettingsPanel();
+        }
     },
 
     showStatus(text, statusType, time) {
@@ -512,7 +535,7 @@ const UI = {
         }
 
         // Error messages do not timeout
-        if (statusType !== 'error') {
+        if (statusType !== 'error' && !(UI.getSetting('keep_status'))) {
             UI.statusTimeout = window.setTimeout(UI.hideStatus, time);
         }
     },
@@ -894,6 +917,13 @@ const UI = {
             .classList.add("noVNC_open");
         document.getElementById('noVNC_settings_button')
             .classList.add("noVNC_selected");
+        if (UI.getSetting('expand_settings_panel')) {
+            document.getElementById('noVNC_settings').querySelectorAll('.noVNC_expander').forEach((expander) => {
+                const hasEnabledItems = Array.from(expander.nextElementSibling.getElementsByTagName('label'))
+                    .some(label => (!(label.classList.contains('noVNC_disabled'))));
+                expander.classList[hasEnabledItems ? 'add' : 'remove']('noVNC_open');
+            });
+        }
     },
 
     closeSettingsPanel() {
@@ -1093,6 +1123,7 @@ const UI = {
         UI.rfb.addEventListener("bell", UI.bell);
         UI.rfb.addEventListener("desktopname", UI.updateDesktopName);
         UI.rfb.clipViewport = UI.getSetting('view_clip');
+        UI.rfb.dragViewport = UI.getSetting('view_drag');
         UI.rfb.scaleViewport = UI.getSetting('resize') === 'scale';
         UI.rfb.resizeSession = UI.getSetting('resize') === 'remote';
         UI.rfb.qualityLevel = parseInt(UI.getSetting('quality'));
