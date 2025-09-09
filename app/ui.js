@@ -17,12 +17,13 @@ import keysyms from "../core/input/keysymdef.js";
 import Keyboard from "../core/input/keyboard.js";
 import RFB from "../core/rfb.js";
 import * as WebUtil from "./webutil.js";
+import { TrafficStatWebSocket, NativeWebSocket } from './traffic-stats.js';
 
 const PAGE_TITLE = "noVNC";
 
 const LINGUAS = ["cs", "de", "el", "es", "fr", "hr", "it", "ja", "ko", "nl", "pl", "pt_BR", "ru", "sv", "tr", "zh_CN", "zh_TW"];
 
-const UI = {
+const UI = TrafficStatWebSocket.UI = {
 
     customSettings: {},
 
@@ -187,6 +188,7 @@ const UI = {
         UI.initSetting('show_dot', false);
         UI.initSetting('path', 'websockify');
         UI.initSetting('repeaterID', '');
+        UI.initSetting('show_traffic', false);
         UI.initSetting('reconnect', false);
         UI.initSetting('reconnect_delay', 5000);
     },
@@ -377,6 +379,7 @@ const UI = {
         UI.addSettingChangeHandler('repeaterID');
         UI.addSettingChangeHandler('logging');
         UI.addSettingChangeHandler('logging', UI.updateLogging);
+        UI.addSettingChangeHandler('show_traffic');
         UI.addSettingChangeHandler('reconnect');
         UI.addSettingChangeHandler('reconnect_delay');
     },
@@ -441,6 +444,7 @@ const UI = {
             UI.disableSetting('port');
             UI.disableSetting('path');
             UI.disableSetting('repeaterID');
+            UI.disableSetting('show_traffic');
 
             // Hide the controlbar after 2 seconds
             UI.closeControlbarTimeout = setTimeout(UI.closeControlbar, 2000);
@@ -451,6 +455,7 @@ const UI = {
             UI.enableSetting('port');
             UI.enableSetting('path');
             UI.enableSetting('repeaterID');
+            UI.enableSetting('show_traffic');
             UI.updatePowerButton();
             UI.keepControlbar();
         }
@@ -890,6 +895,7 @@ const UI = {
         UI.updateSetting('path');
         UI.updateSetting('repeaterID');
         UI.updateSetting('logging');
+        UI.updateSetting('show_traffic');
         UI.updateSetting('reconnect');
         UI.updateSetting('reconnect_delay');
 
@@ -1072,13 +1078,17 @@ const UI = {
             url.protocol = (window.location.protocol === "https:") ? 'wss:' : 'ws:';
         }
 
+        const showTraffic = UI.getSetting('show_traffic');
         try {
+            showTraffic && (globalThis.WebSocket = TrafficStatWebSocket);
             UI.rfb = new RFB(document.getElementById('noVNC_container'),
                              url.href,
                              { shared: UI.getSetting('shared'),
                                repeaterID: UI.getSetting('repeaterID'),
                                credentials: { password: password } });
+            showTraffic && (globalThis.WebSocket = NativeWebSocket);
         } catch (exc) {
+            showTraffic && (globalThis.WebSocket = NativeWebSocket);
             Log.Error("Failed to connect to server: " + exc);
             UI.updateVisualState('disconnected');
             UI.showStatus(_("Failed to connect to server: ") + exc, 'error');
